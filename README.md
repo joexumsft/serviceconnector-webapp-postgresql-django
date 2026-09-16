@@ -27,6 +27,64 @@ In this tutorial, you use the Azure portal to complete the following tasks:
 
 You create a fork of this repository so you can make changes and redeploy the code in a later step. 
 
+### Required secret configuration
+
+The application requires a nonblank `DJANGO_SECRET_KEY` environment variable in
+every environment, including development and management commands. There is no
+default signing key, and startup fails if the variable is missing or blank.
+Setting `SECRET_KEY` in Azure without changing its name to `DJANGO_SECRET_KEY`
+does not configure this application.
+
+Generate a strong random key, for example with Python's
+`secrets.token_urlsafe(64)`, and store it outside the repository. Use a different
+key for each environment, shared consistently across replicas of that
+environment. Keep production keys stable across restarts; do not generate them
+inside application startup code. Do not print, log, or commit secret values.
+
+### Local development (optional)
+
+Local development uses SQLite and does not require the PostgreSQL environment
+helper scripts. Debugging is disabled by default and is enabled only when
+`DJANGO_ENV=development`. Development settings accept only loopback hosts.
+Run the following commands from the repository directory.
+
+PowerShell:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+$env:DJANGO_ENV = "development"
+$env:DJANGO_SETTINGS_MODULE = "azuresite.settings"
+$env:DJANGO_SECRET_KEY = .\.venv\Scripts\python.exe -c "import secrets; print(secrets.token_urlsafe(64))"
+.\.venv\Scripts\python.exe manage.py migrate
+.\.venv\Scripts\python.exe manage.py runserver 127.0.0.1:8000
+```
+
+Bash:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+export DJANGO_ENV=development
+export DJANGO_SETTINGS_MODULE=azuresite.settings
+export DJANGO_SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(64))')"
+python manage.py migrate
+python manage.py runserver 127.0.0.1:8000
+```
+
+These commands capture a new development key in the current shell without
+printing it. Generating another key invalidates data signed with the previous
+development key. The application reads process environment variables; it does
+not automatically load `.env` files.
+
+The legacy `env.bat`, `env.ps1`, and `env.sh` scripts retain their `DB*` variable
+names for existing tooling. They require an externally supplied `DBPASS`;
+`env.bat` also requires `ResourceConnector_demo_Key`. They fail when a required
+credential is missing or empty and do not overwrite supplied credentials.
+These legacy variables are not used by the current Django PostgreSQL settings,
+which read the `AZURE_POSTGRESQL_*` variables described below.
+
 
 ## 2. Provision the web app in Azure 
 
@@ -121,6 +179,40 @@ Exit psql by running the command exit.
 ## 4. Deploy app code to the web app from a repository 
 With the database and connection settings in place, you can now configure the web app to deploy code directly from a GitHub repository. 
 
+### Configure application settings before deployment
+
+First complete [Connect the database](#5-connect-the-database) below to create
+the four `AZURE_POSTGRESQL_*` settings. This can be done before deploying the
+application code.
+
+In the web app's Azure portal page, open **Settings > Environment variables >
+App settings** and configure:
+
+| Setting | Value |
+| --- | --- |
+| `DJANGO_ENV` | `production` |
+| `DJANGO_SETTINGS_MODULE` | `azuresite.production` |
+| `DJANGO_SECRET_KEY` | A newly generated, unique signing key supplied through protected configuration; no shared example value |
+
+Prefer an [App Service Key Vault reference](https://learn.microsoft.com/azure/app-service/app-service-key-vault-references)
+for `DJANGO_SECRET_KEY`. Otherwise, protect the App Service setting with
+appropriate access controls. Service Connector configures database credentials;
+it does not generate the Django signing key.
+
+Apply these settings before enabling deployment. Production always disables
+debugging and restricts hosts using App Service's `WEBSITE_SITE_NAME`. Web
+workers, deployment slots, and management commands must use the intended
+settings and key. Remove conflicting `DJANGO_SETTINGS_MODULE` overrides.
+The application cannot start until both the signing key and database settings
+are supplied.
+
+Any build or CI job that runs Django management commands, including
+`collectstatic`, also needs its required configuration supplied securely.
+Do not hard-code credentials in workflow files or print application settings
+into build logs.
+
+### Connect the GitHub repository
+
 - In the browser window or tab for the web app, select Deployment Center (under Deployment on the left side). 
 
 - In the **Source**, select **GitHub** and then **Authorize** (if necessary). Then follow the sign-in prompts or select Continue to use your current GitHub login. Make sure you are **building with Github Actions**. 
@@ -142,7 +234,7 @@ App Service detects a Django project by looking for a wsgi.py file in each s
 
 ## 5. Connect the database 
 
-With the code deployed and the database in place, the next step is to connect your app service to the database. In this section, you create settings for the web app that it needs to connect to the pollsdb database. These settings appear to the app code as environment variables. (For more information, see Access environment variables.) 
+With the web app and database provisioned, connect the app service to the database before deploying the Django code. In this section, you create settings for the web app that it needs to connect to the pollsdb database. These settings appear to the app code as environment variables. (For more information, see Access environment variables.)
 
 Switch back to the browser tab or window for the web app you created in a previous section. 
 
@@ -205,7 +297,10 @@ Create an administrator login for the app:
 ```
 python manage.py createsuperuser 
 ```
-The createsuperuser command prompts you for Django superuser (or admin) credentials, which are used within the web app. For the purposes of this tutorial, use the default username root, press Enter for the email address to leave it blank, and enter Pollsdb1 for the password. 
+The `createsuperuser` command prompts you for Django administrator credentials.
+Choose your own username and a strong, unique password. Enter the password at
+the interactive prompt; do not reuse a published tutorial password or commit
+administrator credentials to the repository.
 
 ## 7. Create a poll question in the app 
 
@@ -215,13 +310,35 @@ You're now ready to run a quick test of the app to demonstrate that it is workin
 
 - The app should display the message "Polls app" and "No polls are available" because there are no specific polls yet in the database. 
 
-- Browse to `http://<app-name>.azurewebsites.net/admin` (the "Django Administration" page) and sign in using the Django superuser credentials from the previous section (root and Pollsdb1). 
+- Browse to `https://<app-name>.azurewebsites.net/admin` (the "Django Administration" page) and sign in using the administrator credentials you created in the previous section.
 
 - Under Polls, select Add next to Questions and create a poll question with some choices. 
 
 - Browse again to `http://<app-name>.azurewebsites.net/` to confirm that the questions are now presented to the user. Answer questions however you like to generate some data in the database. 
 
 **Congratulations!** You're running a Python Django web app in Azure App Service for Linux, with an active PostgreSQL database. 
+
+## Existing deployments: rotate previously published secrets
+
+Removing a value from the current source does not invalidate it in deployed
+applications, Git history, forks, or existing clones. If you deployed an earlier
+version with its published Django signing key, generate a new key and configure
+all affected instances before starting the updated application. Do not move the
+old published value into an environment variable or retain it as an accepted
+fallback. Coordinate rollout across replicas so they use the same replacement
+key. Existing sessions and signed messages can become invalid, requiring users
+to sign in again.
+
+Have the credential owner confirm that any previously published database
+passwords have been revoked or rotated; if invalidation cannot be demonstrated,
+rotate them and update dependent configurations. Change any administrator
+password that was copied from the earlier tutorial. Source cleanup is not a
+substitute for credential rotation.
+
+These configuration changes do not upgrade this sample's legacy dependency
+versions. Django 2.2 and Python 3.8 are no longer supported; plan a supported
+runtime and dependency upgrade before using this sample for a maintained
+production service.
 
 ## 8. Clean up resources  
 

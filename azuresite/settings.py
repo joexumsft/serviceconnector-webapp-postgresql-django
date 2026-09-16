@@ -31,7 +31,7 @@ if not SECRET_KEY or not SECRET_KEY.strip():
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DJANGO_ENV') == 'development'
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]']
+ALLOWED_HOSTS = [ '*' ]
 
 
 # Application definition

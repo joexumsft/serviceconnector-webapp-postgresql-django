@@ -41,7 +41,7 @@ Keep secrets out of Git and never use placeholders as credentials.
 ### Local development (optional)
 
 Set `DJANGO_ENV=development` and `DJANGO_SETTINGS_MODULE=azuresite.settings`.
-Local settings use SQLite and loopback hosts. Production debugging is disabled.
+Local settings use SQLite. Production debugging is disabled.
 
 The legacy `env.bat`, `env.ps1`, and `env.sh` helpers require `DBPASS`;
 `env.bat` also requires `ResourceConnector_demo_Key`. These are separate from
@@ -259,11 +259,7 @@ After configuration, use the following steps to explore the polls app.
 
 - Browse again to `http://<app-name>.azurewebsites.net/` to confirm that the questions are now presented to the user. Answer questions however you like to generate some data in the database. 
 
-## Existing deployments
-
-Rotate any previously used published signing keys or database/admin passwords,
-and update affected deployments. Signing-key rotation can invalidate existing
-sessions. Removing secrets from source does not revoke them or erase historical copies.
+**Congratulations!** You're running a Python Django web app in Azure App Service for Linux, with an active PostgreSQL database.
 
 ## 8. Clean up resources  
 

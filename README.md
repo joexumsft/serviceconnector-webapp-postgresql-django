@@ -13,9 +13,13 @@ urlFragment: "serviceconnector-webapp-postgresql-django"
 This repository illustrates how a Django application can connect Azure App
 Service to Azure Database for PostgreSQL through Service Connector.
 
-> **Instructional sample, not production-ready.** Configure your own resources
-> and secrets. The sample targets unsupported Django 2.2 and Python 3.8 versions;
-> upgrade before production use.
+**Instructional sample, not production-ready.** Configure your own resources
+and secrets.
+
+> [!WARNING]
+> [Django 2.2](https://docs.djangoproject.com/en/2.2/releases/2.2.28/) and
+> [Python 3.8](https://peps.python.org/pep-0569/#lifespan) are end-of-life and no
+> longer receive upstream security fixes. Upgrade before production use.
 
 This tutorial covers:
 

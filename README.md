@@ -4,14 +4,37 @@ languages:
 - python
 products:
 - service-connector
-description: "Sample projects to connect Azure WebApp to Azure PostgreSQL via Service Connector"
+description: "Instructional Django sample for connecting Azure App Service to PostgreSQL with Service Connector"
 urlFragment: "serviceconnector-webapp-postgresql-django"
 ---
 
 
 # Tutorial: Connect a WebApp to Azure Database for PostgreSQL with Service Connector
-Using the Azure portal, you can deploy a data-driven Python Django web app to Azure App Service and connect it to an Azure Database for PostgreSQL database. You can start with a free pricing tier that can be scaled up at any later time. 
-In this tutorial, you use the Azure portal to complete the following tasks: 
+This repository illustrates how a Django application can connect Azure App
+Service to Azure Database for PostgreSQL through Service Connector.
+
+> **Instructional reference, not a production-ready application.** The code and
+> historical walkthrough are starting points to adapt for your own environment,
+> not a turnkey deployment. The sample requires customer-supplied configuration
+> and does not provision Azure resources or manage your credential lifecycle.
+
+Customers are responsible for configuring their own resources, permissions,
+network access, and secrets, and for assessing the adapted application before
+deployment. Do not use documentation placeholders as signing keys or passwords.
+Supply real values through protected configuration, not tracked source files.
+Missing required configuration deliberately causes startup to fail instead of
+using a shared example secret.
+
+The sample retains legacy dependency versions: Django 2.2 and Python 3.8 are no
+longer supported. Plan a supported runtime and dependency upgrade before using
+the code for a maintained production service. Portal choices and resource
+options in this historical walkthrough may differ from those available today;
+consult the current [Service Connector documentation](https://learn.microsoft.com/azure/service-connector/overview)
+and [App Service Python documentation](https://learn.microsoft.com/azure/app-service/configure-language-python)
+when adapting the examples.
+
+The walkthrough illustrates the following tasks for a customer-configured
+environment:
 
 - Provision a web app in Azure that deploys from a GitHub repo 
 
@@ -25,7 +48,8 @@ In this tutorial, you use the Azure portal to complete the following tasks:
 
 **Fork** the repository into your own GitHub account. 
 
-You create a fork of this repository so you can make changes and redeploy the code in a later step. 
+Use the fork to study and adapt the examples. Review the configuration and
+runtime requirements before attempting a deployment.
 
 ### Required secret configuration
 
@@ -229,7 +253,9 @@ If you see a popup window that says authentication succeeded, but the portal sti
 | Version   |  Python 3.8  |
  
  
-- Select Save. Azure should deploy the code within a few seconds and start the app. 
+- Select **Save** to start the configured deployment workflow. Successful
+  deployment and startup depend on your runtime, dependencies, resource access,
+  and required application settings.
 App Service detects a Django project by looking for a wsgi.py file in each subfolder. When App Service finds that file, it loads the Django web app. For more information, see Configure built-in Python image. 
 
 ## 5. Connect the database 
@@ -304,7 +330,8 @@ administrator credentials to the repository.
 
 ## 7. Create a poll question in the app 
 
-You're now ready to run a quick test of the app to demonstrate that it is working with the PostgreSQL database. 
+If you choose to run the sample after adapting and configuring your deployment,
+the following steps illustrate the expected polls application behavior.
 
 - In the browser window or tab for the web app, return to the Overview page, then select the URL for the web app (of the form `http://<app-name>.azurewebsites.net`). 
 
@@ -316,7 +343,8 @@ You're now ready to run a quick test of the app to demonstrate that it is workin
 
 - Browse again to `http://<app-name>.azurewebsites.net/` to confirm that the questions are now presented to the user. Answer questions however you like to generate some data in the database. 
 
-**Congratulations!** You're running a Python Django web app in Azure App Service for Linux, with an active PostgreSQL database. 
+These steps illustrate application behavior after configuration; they do not
+establish that a deployment is secure or production-ready.
 
 ## Existing deployments: rotate previously published secrets
 
@@ -334,11 +362,6 @@ passwords have been revoked or rotated; if invalidation cannot be demonstrated,
 rotate them and update dependent configurations. Change any administrator
 password that was copied from the earlier tutorial. Source cleanup is not a
 substitute for credential rotation.
-
-These configuration changes do not upgrade this sample's legacy dependency
-versions. Django 2.2 and Python 3.8 are no longer supported; plan a supported
-runtime and dependency upgrade before using this sample for a maintained
-production service.
 
 ## 8. Clean up resources  
 
